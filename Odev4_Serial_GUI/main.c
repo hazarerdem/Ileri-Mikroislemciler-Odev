@@ -46,8 +46,8 @@ void butonkesme();
     Lcd_Goto(1,0);
     Lcd_Puts("Dijital Saat");
 
-    TimerEnable(TIMER0_BASE, TIMER_A);
-    ADCProcessorTrigger(ADC0_BASE, 1);
+    TimerEnable(TIMER0_BASE, TIMER_A);// Timer0_A çevrime baþlat
+    ADCProcessorTrigger(ADC0_BASE, 1);//adc yi çevrime baþlat
 
     while (1) {
 
@@ -55,24 +55,24 @@ void butonkesme();
 
             // SAAT GÖNDERME ÝÞLEMÝ ÝÇÝN
                  b = UARTCharGet(UART0_BASE);
-                 if (b == 0x23) { // # gelirse
+                 if (b == 0x23) { // ilk byte # gelirse
                      for ( i = 0; i < 8; ++i) {
                          uartveri[i] = UARTCharGet(UART0_BASE)-48;  //elde ettiðimiz veriyi 30H çýkartýrýz
                      }                                              //normal formatta uartveriye atarýz
                      saat = ((uartveri[0]*10)+uartveri[1]);
                      dakika = ((uartveri[3]*10)+uartveri[4]);       //uart verinin ilk biti saatin onlar basamaðý
-                     saniye = ((uartveri[6]*10)+uartveri[7]);       //sonra saatin birleri þeklinde ilerler...
+                     saniye = ((uartveri[6]*10)+uartveri[7]);       //sonraki veri saatin birleri þeklinde ilerler...
                  }
             // HARF GÖNDERME ÝÞLEMÝ ÝÇÝN
-                 else if (b == 0x2A) { // * gelirse
-                     GPIOPinWrite(GPIO_PORTF_BASE,6,2);
+                 else if (b == 0x2A) { // ilk byte * gelirse
+                     GPIOPinWrite(GPIO_PORTF_BASE,6,2); //kýrmýzý ledi yak
                          for ( i = 0; i < 8; ++i) {
-                             uartveri[i] = UARTCharGet(UART0_BASE);
-                             if (uartveri[i] == 0x2A){
-                                 i=8;}
-                             else {
-                                 Lcd_Goto(1,13+i);
-                                 Lcd_Putch(uartveri[i]);}
+                             uartveri[i] = UARTCharGet(UART0_BASE); //sýrayla gelen verileri uartveri dizisine al
+                             if (uartveri[i] == 0x2A){              //aldýðýn veri 0x2A (*) mý diye
+                                 i=8;}                              //her alýþýnda kontrol et
+                             else {                                 //eðer (*) sa aldýðýn deðer
+                                 Lcd_Goto(1,13+i);                  //döngüden çýk 1.sütunda ilgili yere
+                                 Lcd_Putch(uartveri[i]);}           //o veriyi yazmaya baþla
                          }
                 }
              }
@@ -86,9 +86,9 @@ void butonkesme();
 void timerakesmesi(void){
 
     TimerIntClear(TIMER0_BASE, TIMER_A);
-    saniye++;
-
-    if(saniye==60)
+    saniye++;                  //saat dakika ve saniyeyi 10 a böldüðümüzde onlar basamaðýný elder ederiz
+                               //mod 10 aldýðýmýzda 10 bölümünden kalaný verir ,birler basamaðýný elde ederiz
+    if(saniye==60)             //bu elde ettiklerimizi 30H(48D) ile toplayarak ascii formatta lcd ye yazdýrýrýz
     {
         saniye=0;
         dakika++;
@@ -106,48 +106,48 @@ void timerakesmesi(void){
     }
     TimerYaz();
     printTemp(sicak);
-    UARTCharPut(UART0_BASE, 'T');       //burdan kontrol iþareti olarak T gönderiyoruz
-    UARTCharPut(UART0_BASE, saatonlar); //sharp develop programýnda T geldimi diye kontrol edicez
-    UARTCharPut(UART0_BASE, saatbirler);//T geldiyse textboxun içine yazdýrýcaz sharp developta
+    UARTCharPut(UART0_BASE, 'T');           //burdan kontrol iþareti olarak T gönderiyoruz
+    UARTCharPut(UART0_BASE, saatonlar);     //sharp develop programýnda T geldimi diye kontrol edicez
+    UARTCharPut(UART0_BASE, saatbirler);    //T geldiyse textboxun içine yazdýrýcaz sharp developta
     UARTCharPut(UART0_BASE, ':');
-    UARTCharPut(UART0_BASE, dakikaonlar);
-    UARTCharPut(UART0_BASE, dakikabirler);
+    UARTCharPut(UART0_BASE, dakikaonlar);   //sonrasýnda saatin,dakikanýn ve saniyenin ilgili basamaklarýn
+    UARTCharPut(UART0_BASE, dakikabirler);  //araya : koyarak sýrayla gönder
     UARTCharPut(UART0_BASE, ':');
     UARTCharPut(UART0_BASE, saniyeonlar);
     UARTCharPut(UART0_BASE, saniyebirler);
-    UARTCharPut(UART0_BASE, '\n');
-
+    UARTCharPut(UART0_BASE, '\n');         //sharp developta readline fonksiyonu
+                                           //gönderilenleri okurken bu iþareti görünce bittiðini anlar
 }
 
 void Timervekesmeayar(void)
 {
     SysCtlClockSet(SYSCTL_SYSDIV_5|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
 
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); //timer0 hayat verdik
 
-    TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
+    TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);// aþþaðý doðru saysýn, 0 a doðru
     TimerLoadSet(TIMER0_BASE, TIMER_A, SysCtlClockGet()-1); // TimerLoadSet(TIMER0_BASE, TIMER_A, 40000000-1);
 
     IntMasterEnable(); //global
     IntEnable(INT_TIMER0A); //global
 
-    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-    TimerIntRegister(TIMER0_BASE, TIMER_A, timerakesmesi);
+    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);//timer timeout olduðunda kesme aktif olsun
+    TimerIntRegister(TIMER0_BASE, TIMER_A, timerakesmesi);//kesme geldiðinde "timerakesmesi" fonksiyonuna gitsin
 
 }
 
 void TimerYaz(){
-    saatonlar=saat/10+48;
-    saatbirler=saat%10+48;
-    dakikaonlar=dakika/10+48;
+    saatonlar=saat/10+48;           //saat dakika ve saniyeyi 10 a böldüðümüzde onlar basamaðýný elder ederiz
+    saatbirler=saat%10+48;          //mod 10 aldýðýmýzda 10 bölümünden kalaný verir ,birler basamaðýný elde ederiz
+    dakikaonlar=dakika/10+48;       //bu elde ettiklerimizi 30H(48D) ile toplayarak ascii formatta lcd ye yazdýrýrýz
     dakikabirler=dakika%10+48;
     saniyeonlar=saniye/10+48;
     saniyebirler=saniye%10+48;
 
     Lcd_Goto(2,0);
-    Lcd_Putch(saatonlar);
-    Lcd_Goto(2,1);
-    Lcd_Putch(saatbirler);
+    Lcd_Putch(saatonlar);           // saat dakika saniyenin, onlar ve birler basamaðýný ayrý ayrý yazdýracaðýz
+    Lcd_Goto(2,1);                  // 2.satýr 0. sütundan baþlayarak ilgili yerlere teker teker yaz
+    Lcd_Putch(saatbirler);          // araya : koyarak yaz
     Lcd_Goto(2,2);
     Lcd_Puts(":");
     Lcd_Goto(2,3);
@@ -164,40 +164,37 @@ void TimerYaz(){
 
 void ADCveKesmeAyar(void){
 
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);// analog giriþi pe3 e baðlayacaðýmýz için portE ye hayat verdik
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);// adc0 a hayat verdik
+    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);// portE nin pin 3 ü adc nin analog giriþi olarak seçtik
 
-
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
-
-    IntEnable(INT_ADC0SS0); //2global
+    IntEnable(INT_ADC0SS0);//2 global ayardan biri, diðeri IntMasterEnable(); onu zaten timer için önceden açmýþtýk.
 
     ADCSequenceConfigure(ADC0_BASE, 1, ADC_TRIGGER_PROCESSOR, 0);
     //tek çevrim modu olarak seq=1 ayarladýk. þimdi seq=1 in steplerini ayarlamaya baþla
     ADCSequenceStepConfigure(ADC0_BASE, 1, 0, ADC_CTL_CH0);
-    ADCSequenceStepConfigure(ADC0_BASE, 1, 1, ADC_CTL_CH0);
-    ADCSequenceStepConfigure(ADC0_BASE, 1, 2, ADC_CTL_CH0);
+    ADCSequenceStepConfigure(ADC0_BASE, 1, 1, ADC_CTL_CH0);// 1. sequencenin 0-1-2-3. stepleri
+    ADCSequenceStepConfigure(ADC0_BASE, 1, 2, ADC_CTL_CH0);// ch0 yani pe3 den veri alsýn
     ADCSequenceStepConfigure(ADC0_BASE, 1, 3, ADC_CTL_CH0|ADC_CTL_IE|ADC_CTL_END);
     //Step konfigurasyon burada
 
-    ADCIntEnable(ADC0_BASE, 1); //2 lokal
-    ADCIntRegister(ADC0_BASE, 1, ADCKesme); //2 lokal
+    ADCIntEnable(ADC0_BASE, 1); //2 lokal ayar
+    ADCIntRegister(ADC0_BASE, 1, ADCKesme); //2 lokal ayar. adc kesmesi geldiðinde "ADCKesme" fonksiyonuna git
 
 
     ADCSequenceEnable(ADC0_BASE, 1); //adc çalýþ demedik, sadece adc artýk kullanýlabilir.
 
-     //adc yi çevrime baþlat
 }
 
 void ADCKesme(){
-    ADCSequenceDataGet(ADC0_BASE, 1, gelenveri);
+    ADCSequenceDataGet(ADC0_BASE, 1, gelenveri);    //adc0 ýn sequence 1 inden gelen verileri "gelenveri" dizisine aktar
 
-    ortdeger = (gelenveri[0]+gelenveri[1]+gelenveri[2]+gelenveri[3])/4;
+    ortdeger = (gelenveri[0]+gelenveri[1]+gelenveri[2]+gelenveri[3])/4; //gelenveri dizisindeki 4 deðeri toplayýp 4 e bölerek ortalamayý buluruz
 
-    temp=(ortdeger*200)/4095;
-    sicak = temp-100;
+    temp=(ortdeger*200)/4095;   // 12 bitlik adc nin çözünürlüðü 4095. dijital deðeri sýcaklýk deðerine benzetmeye çalýþtým
+    sicak = temp-100;           // hesaplanan deðerden 100 çýkarýlarak gerçek sýcaklýk bulunur (-100C ile +100C arasýnda)
 
-    ADCIntClear(ADC0_BASE, 1);
+    ADCIntClear(ADC0_BASE, 1);  // kesmeyi temizliyoruz yoksa sürekli ayný kesmeye girer ve kilitlenir
 
     ADCProcessorTrigger(ADC0_BASE, 1); //adc yi tekrar çevrime baþlat.
 
@@ -207,37 +204,37 @@ void printTemp(int sicak)
 {
     UARTCharPut(UART0_BASE, 'D');
     int negatif = 0;
-    if (sicak < 0)
-    {
+    if (sicak < 0)                      //eðer sayý negatifse pozitife çevirip
+    {                                   //matematiksel iþlemler için sayýyý saklýyoruz
         negatif = 1;
         sicak = -sicak;
     }
-    int yuzler = sicak / 100;
+    int yuzler = sicak / 100;           // sayýyý yüzler onlar birler basamaðýna parçalýyoruz
     int onlar  = (sicak / 10) % 10;
     int birler = sicak % 10;
-    Lcd_Goto(2, 10);
+    Lcd_Goto(2, 10);                    // lcd nin belirtilen yerine git
     if (negatif)
     {
-        Lcd_Putch('-');
+        Lcd_Putch('-');                 // negatifse - koy
         UARTCharPut(UART0_BASE, '-');
     }
-    else
+    else                                // pozitifse boþluk koy
     {
         Lcd_Putch(' ');
         UARTCharPut(UART0_BASE, ' ');
     }
     if (sicak >= 100)
     {
-        Lcd_Putch(yuzler + 48);
-        Lcd_Putch(onlar + 48);
+        Lcd_Putch(yuzler + 48);             // ascii deki karþýlýðý için +48 ekliyoruz (+30H)
+        Lcd_Putch(onlar + 48);              // ki lcd ye yollayabilelim
         Lcd_Putch(birler + 48);
-        UARTCharPut(UART0_BASE, yuzler+48);//LCD ye gönderdiðimiz verileri uarta da göndericez ki textboxun içine yazdýralým
-        UARTCharPut(UART0_BASE, onlar+48);
+        UARTCharPut(UART0_BASE, yuzler+48); //LCD ye gönderdiðimiz verileri uarta da göndericez ki
+        UARTCharPut(UART0_BASE, onlar+48);  //textboxun içine yazdýralým
         UARTCharPut(UART0_BASE, birler+48);
     }
     else if (sicak >= 10)
     {
-        Lcd_Putch(' ');
+        Lcd_Putch(' ');                     // sayý 2 basamaklýysa baþýna bir boþluk ekle " 12" gibi
         Lcd_Putch(onlar + 48);
         Lcd_Putch(birler + 48);
         UARTCharPut(UART0_BASE, ' ');
@@ -246,7 +243,7 @@ void printTemp(int sicak)
     }
     else
     {
-        Lcd_Putch(' ');
+        Lcd_Putch(' ');                     // sayý tek basamaklýysa baþýna iki boþluk ekle "  5" gibi
         Lcd_Putch(' ');
         Lcd_Putch(birler + 48);
         UARTCharPut(UART0_BASE, ' ');
@@ -262,12 +259,12 @@ void printTemp(int sicak)
         UARTCharPut(UART0_BASE, 'O');
         UARTCharPut(UART0_BASE, 'N');
     }
-    UARTCharPut(UART0_BASE, '\n');
-    Lcd_Putch('C');
+    UARTCharPut(UART0_BASE, '\n');  // sharpdevelopta readline kullandýðýmýz için gönderilecek verinin bittiðini bu iþaret geldiðinde anlarýz
+    Lcd_Putch('C');// sonuna Celcius iþareti ekle
 }
 
 void uartayar(){
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);//uart rx-tx giriþi için porta yý kullanýcaz o yüzden hayat verdik
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);//hayat verdik
 
     GPIOPinConfigure(GPIO_PCTL_PA0_U0RX);//GPIO_PA0_U0RX
@@ -277,7 +274,7 @@ void uartayar(){
     UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 9600, UART_CONFIG_WLEN_8|UART_CONFIG_STOP_ONE|UART_CONFIG_PAR_NONE);
     //baudrate 120-240-480-1200-9600-15200
     //uart.h 80 den ui32config parametreleri
-    UARTEnable(UART0_BASE);
+    UARTEnable(UART0_BASE);// uart aktif edildi
 }
 
 void butonayar(){

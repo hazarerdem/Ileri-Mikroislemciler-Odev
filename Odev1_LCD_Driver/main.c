@@ -10,9 +10,9 @@
 int main(void) {
  SysCtlClockSet(SYSCTL_SYSDIV_4|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
     Lcd_init();
-    Lcd_Goto(1,2);
+    Lcd_Goto(1,2);                  //lcd nin 1.satýr 2.sütununa gidip "DOGUKAN HAZAR" yaz
     Lcd_Puts("DOGUKAN HAZAR");
-    Lcd_Goto(2,0);
+    Lcd_Goto(2,0);                  //lcd nin 2.satýr 0.sütununa gidip "ERDEM B220100030" yaz
     Lcd_Puts("ERDEM B220100030");
 
     while (1) {

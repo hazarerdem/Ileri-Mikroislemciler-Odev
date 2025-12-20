@@ -45,9 +45,9 @@ int main(void) {
         saniyebirler=saniye%10+48;
 
         Lcd_Goto(2,0);
-        Lcd_Putch(saatonlar);
-        Lcd_Goto(2,1);
-        Lcd_Putch(saatbirler);
+        Lcd_Putch(saatonlar);       // saat dakika saniyenin, onlar ve birler basamaðýný ayrý ayrý yazdýracaðýz
+        Lcd_Goto(2,1);              // 2.satýr 0. sütundan baþlayarak ilgili yerlere teker teker yaz
+        Lcd_Putch(saatbirler);      // araya : koyarak yaz
         Lcd_Goto(2,2);
         Lcd_Puts(":");
         Lcd_Goto(2,3);
